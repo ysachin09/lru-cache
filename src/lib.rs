@@ -17,7 +17,7 @@ pub struct LruCache<K, V> {
     tail: Option<Rc<RefCell<Node<K, V>>>>,
 }
 
-impl<K: std::hash::Hash + Eq, V> LruCache<K, V> {
+impl<K: std::hash::Hash + Eq + Clone, V> LruCache<K, V> {
     pub fn new(capacity: usize) -> Self {
         LruCache {
             capacity,
@@ -63,9 +63,9 @@ impl<K: std::hash::Hash + Eq, V> LruCache<K, V> {
     }
     
 
-    pub fn attach_to_head(&mut self, node: Rc<RefCell<Node<K, V>>>) {
+    fn attach_to_head(&mut self, node: Rc<RefCell<Node<K, V>>>) {
         let current_head = self.head.clone();
-        node.borrow_mut().next = current_head;
+        node.borrow_mut().next = current_head.clone();
         node.borrow_mut().prev = None;
         if let Some(current_head) = current_head {
             current_head.borrow_mut().prev = Some(node.clone());
@@ -77,10 +77,10 @@ impl<K: std::hash::Hash + Eq, V> LruCache<K, V> {
     }
 
     pub fn put(&mut self, key: K, value: V) {
-        if let Some(node) = self.map.get(&key) {
+        if let Some(node) = self.map.get(&key).cloned() {
             node.borrow_mut().value = value;
             self.detach(node.clone());
-            self.attach_to_head(node.clone());
+            self.attach_to_head(node);
             return;
         }
     
